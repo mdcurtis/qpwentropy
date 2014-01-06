@@ -5,8 +5,6 @@
 #include <QIODevice>
 #include <QStringList>
 
-#include <QDebug>
-
 #include "Range.hpp"
 #include "SubstitutionCipher.hpp"
 
@@ -16,7 +14,8 @@ using QPwEntropy::Range;
 struct RankedDictionary::SearchNode
 {
   SearchNode() : symbol( '\0' ), parent( 0 ), firstIndex( 0 ), lastIndex( 0 )
-  {}
+  {
+  }
 
   QChar symbol;
 
@@ -53,7 +52,7 @@ RankedDictionary::Word & RankedDictionary::Word::operator=( const Word &other )
 }
 
 
-RankedDictionary::RankedDictionary() : m_maxLength( 0 ), m_searchRoot( 0 )
+RankedDictionary::RankedDictionary( QString name ) : m_maxLength( 0 ), m_searchRoot( 0 ), m_name( name )
 {}
 
 RankedDictionary::~RankedDictionary()
@@ -107,18 +106,15 @@ void RankedDictionary::buildIndex( SearchNode *node, int chrIndex )
 
 
   ++chrIndex;
-  //if( chrIndex < kIndexDepth ) {
+  if( chrIndex < kIndexDepth ) {
     for( QVector< SearchNode >::iterator child = node->children.begin(); child != node->children.end(); ++child ) {
-      qDebug() << QString( chrIndex - 1, ' ' ) << " Sym: " << child->symbol << ", " << child->firstIndex << " -> " << child->lastIndex;
-      if( chrIndex < kIndexDepth ) {
-        buildIndex( &(*child), chrIndex );
-        if( !child->children.empty() ) {
-          // Truncate the search space of the node to only those strings which are shorter than the next search depth
-          node->lastIndex = child->children.first().firstIndex - 1;
-        }
+      buildIndex( &(*child), chrIndex );
+      if( !child->children.empty() ) {
+        // Truncate the search space of the node to only those strings which are shorter than the next search depth
+        node->lastIndex = child->children.first().firstIndex - 1;
       }
     }
-  //}
+  }
 }
 
 void RankedDictionary::loadDictionary( QIODevice *dictionary )
@@ -140,7 +136,7 @@ void RankedDictionary::loadDictionary( QIODevice *dictionary )
   }
 
 
-  buildIndex();
+  //buildIndex();
 }
 
 inline void RankedDictionary::insert( const QString &wordString, int rank )
@@ -150,15 +146,9 @@ inline void RankedDictionary::insert( const QString &wordString, int rank )
   word.m_rank = rank;
 
   m_dictionary.append( word );
-  
-  if( !m_oldDictionary.contains( wordString ) ) {
-    m_oldDictionary[ wordString ] = rank;
-  }
-
-  m_maxLength = qMax( m_maxLength, word.m_string.length() );
 }
 
-Range RankedDictionary::indexMatch( const QString &word, const SearchNode *node, int chrIndex, QList< Word > *matches ) const
+Range RankedDictionary::indexMatch( const QString &word, const SearchNode *node, int chrIndex, WordList *matches ) const
 {
   if( chrIndex >= word.length() ) {
     return Range( 0, -1 ); // no point continuing
@@ -191,26 +181,10 @@ Range RankedDictionary::indexMatch( const QString &word, const SearchNode *node,
   }
 }
 
-int RankedDictionary::match( const QString &word ) const
+
+RankedDictionary::WordList RankedDictionary::match( const QString &word ) const
 {
-  if( !m_oldDictionary.contains( word.length() ) ) {
-    return kNotFound;
-  }
-  if( word.length() > m_maxLength ) {
-    return kNotFound;
-  }
-
-  if( m_oldDictionary.contains( word ) ) {
-    return m_oldDictionary.value( word );
-  } else {
-    return kNotFound;
-  }
-}
-
-
-QList< RankedDictionary::Word > RankedDictionary::match2( const QString &word ) const
-{
-  QList< Word > matches;
+  WordList matches;
 
   Range search = indexMatch( word, m_searchRoot, 0, &matches );
 

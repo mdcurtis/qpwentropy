@@ -22,6 +22,16 @@ public:
     return result;
   }
 
+  inline static double nPrange( int n, int range ) {
+    double result = 0;
+
+    for( int ways = 0; ways <= range; ++ways ) {
+      result += Statistics::nPr( n, ways );
+    }
+
+    return result;
+  }
+
 private:
   Statistics();
 };

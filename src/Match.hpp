@@ -16,8 +16,12 @@ public:
 
   virtual double entropy() const;
 
+  virtual QString name() const;
+
   inline const Range & range() const { return m_range; }
   inline const QString & token() const { return m_token; }
+
+  virtual double uppercaseEntropy() const;
 
 protected:
   double bruteforceCardinality() const;

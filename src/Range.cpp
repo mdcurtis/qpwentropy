@@ -7,7 +7,7 @@ Range::Range( int start, int end ) : m_start( start ), m_end( end )
 
 bool Range::contains( int value ) const
 {
-  if( value >= m_start && value <= m_end ) return true;
+  if( value >= m_start && value < m_end ) return true;
 
   return false;
 }

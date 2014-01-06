@@ -2,7 +2,7 @@
 #define _QPwEntropy_RankedDictionary_hpp_
 
 #include <QHash>
-#include <QMap>
+#include <QList>
 
 class QIODevice;
 
@@ -35,38 +35,39 @@ public:
     int m_rank;
   };
 
+  typedef QList< Word > WordList;
+
 private:
   struct SearchNode;
 
 public:
-  RankedDictionary();
+  RankedDictionary( QString name );
   ~RankedDictionary();
 
   void addPreprocessor( SubstitutionCipher *substitution );
 
+  void buildIndex();
   void loadDictionary( QIODevice *dictionary );
 
-  int match( const QString &word ) const;
+  QString name() const { return m_name; }
 
-  QList< Word > match2( const QString &word ) const;
+  WordList match( const QString &word ) const;
 
 private:
-  void buildIndex();
   void buildIndex( SearchNode *node, int chrIndex );
 
-  Range indexMatch( const QString &word, const SearchNode *node, int chrIndex, QList< Word > *matches ) const;
-
+  Range indexMatch( const QString &word, const SearchNode *node, int chrIndex, WordList *matches ) const;
 
   void insert( const QString & word, int rank );
 
 private:
+  QString m_name;
+
   QList< SubstitutionCipher * > m_preprocessors;
-  QList< Word >  m_dictionary;
+  WordList m_dictionary;
   SearchNode *m_searchRoot;
 
   static const int kIndexDepth = 3;
-
-  QHash< QString, int > m_oldDictionary;
 
   int m_maxLength;
 };

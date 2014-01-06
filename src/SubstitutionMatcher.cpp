@@ -17,6 +17,11 @@ double SubstitutionMatch::entropy() const
   return 1 + DictionaryMatch::entropy();
 }
 
+QString SubstitutionMatch::name() const
+{
+  return "Substitution";
+}
+
 SubstitutionMatcher::SubstitutionMatcher( DictionaryMatcher *dictionary ) :
   m_dictionary( dictionary )
 {
@@ -37,10 +42,9 @@ MatchList SubstitutionMatcher::match( const QString &input ) const
     QVector< int > includedChars;
 
     alternates.append( cipher->decipher( input, &includedChars ) );
-    
+        
     Q_FOREACH( QString possibleMatch, alternates ) {
-      //MatchList possibleResults = m_dictionary->match( possibleMatch, includedChars );
-      MatchList possibleResults = m_dictionary->match( possibleMatch );
+      MatchList possibleResults = m_dictionary->match( possibleMatch, includedChars );
 
       Q_FOREACH( QSharedPointer< SubstringMatch > result, possibleResults ) {
         DictionaryMatch *dictionaryMatch = dynamic_cast< DictionaryMatch * >( result.data() );

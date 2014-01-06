@@ -17,9 +17,10 @@ public:
 
   virtual double entropy() const;
 
+  virtual QString name() const;
+
   inline int rank() const { return m_rank; }
 
-  virtual double uppercaseEntropy() const;
 
 protected:
   int m_rank;

@@ -14,6 +14,8 @@ public:
 
   virtual double entropy() const;
 
+  virtual QString name() const;
+
   const QString &original() const { return m_original; }
 
 protected:

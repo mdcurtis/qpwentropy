@@ -1,8 +1,10 @@
 #include "SubstitutionCipher.hpp"
 
+#include "RankedDictionary.hpp"
 #include "DictionaryMatcher.hpp"
 #include "SubstitutionMatcher.hpp"
-#include "RankedDictionary.hpp"
+#include "SequenceMatcher.hpp"
+#include "SpatialMatcher.hpp"
 
 #include <iostream>
 
@@ -27,7 +29,7 @@ int main( int argc, char **argv )
   } 
 
   QStringList dictionaries;
-  dictionaries << "passwords" << "surnames" << "male_names" << "female_names" << "english";
+  dictionaries << "passwords" << "surnames" << "male_names" << "female_names" << "english" << "german";
 
   DictionaryMatcher matcher;
 
@@ -35,28 +37,46 @@ int main( int argc, char **argv )
   SubstitutionMatcher subMatcher( &matcher );
   subMatcher.addSubstitution( &cipher );
 
+  QTime loadTimer;
+  loadTimer.start();
+
+  SubstitutionCipher germanUmlauts;
+  germanUmlauts.addSubstitution( "ae", L'ä' );
+  germanUmlauts.addSubstitution( "oe", L'ö' );
+  germanUmlauts.addSubstitution( "ue", L'ü' );
+  germanUmlauts.addSubstitution( "a", L'ä' ); // lazy typist versions
+  germanUmlauts.addSubstitution( "o", L'ö' );
+  germanUmlauts.addSubstitution( "u", L'ü' );
+  germanUmlauts.addSubstitution( "ss", L'ß' );
 
   Q_FOREACH( QString dictionaryFilename, dictionaries ) {
     QFile file( dictionaryFilename + ".txt" );
     if( file.open( QIODevice::ReadWrite ) ) {
       std::cout << "Parsing dictionary " << dictionaryFilename.toStdString() << std::endl;
 
-      RankedDictionary *dict = new RankedDictionary();
+      RankedDictionary *dict = new RankedDictionary( dictionaryFilename );
+      if( dictionaryFilename == "german" ) {
+        dict->addPreprocessor( &germanUmlauts );
+      }
+      
       dict->loadDictionary( &file );
 
-      std::cout << "Dictionary loaded, trying some stuff" << std::endl;
-      QList< RankedDictionary::Word > words = dict->match2( "everybody" );
-      Q_FOREACH( RankedDictionary::Word word, words ) {
-        std::cout << "Found: " << word.string().toStdString() << ", rank: " << word.rank() << std::endl;
-      }
-
-      matcher.addDictionary( dict );
-
+      dict->buildIndex();
       
+      matcher.addDictionary( dict );
     } else {
       std::cout << "Could not open dictionary " << dictionaryFilename.toStdString() << std::endl;
     }
   }
+
+
+  SequenceMatcher alphaSequence( "alphabet", "abcdefghijklmnopqrstuvwxyz" );
+  SequenceMatcher numSequence( "numerals", "0123456789" );
+
+  QwertyMatcher qwertyMatcher;
+  KeypadMatcher keypadMatcher;
+
+  std::cout << "Dictionary build time: " << loadTimer.elapsed() << " ms" << std::endl;
 
   QTime timer;
   timer.start();
@@ -64,11 +84,15 @@ int main( int argc, char **argv )
   Q_FOREACH( QString test, tests ) {
     MatchList results = matcher.match( test );
     results.append( subMatcher.match( test ) );
+    results.append( numSequence.match( test ) );
+    results.append( alphaSequence.match( test ) );
+    results.append( qwertyMatcher.match( test ) );
+    results.append( keypadMatcher.match( test ) );
 
-    std::cout << test.toStdString() << std::endl;
+    std::cout << test.toUtf8().data() << std::endl;
 
     Q_FOREACH( QSharedPointer< SubstringMatch > match, results ) {
-      std::cout << "  " << match->token().toStdString() << " (" << match->range().start() << ", " << match->range().end() << "); entropy = " << match->entropy();
+      std::cout << "  " << match->token().toUtf8().data() << " (" << match->range().start() << ", " << match->range().end() << "); entropy = " << match->entropy();
 
       DictionaryMatch *dMatch = dynamic_cast< DictionaryMatch * >( match.data() );
       if( dMatch ) {
@@ -83,38 +107,6 @@ int main( int argc, char **argv )
 
   return 0;
 }
-
-/*
-  L33tCipher deLeet;
-
-  Q_FOREACH( QString test, tests ) {
-    QStringList outcomes = deLeet.decipher( test );
-
-    if( !outcomes.empty() ) {
-      std::cout << test.toStdString() << std::endl;
-      Q_FOREACH( QString outcome, outcomes ) {
-        std::cout << "  " << outcome.toStdString() << std::endl;
-      }
-      std::cout << std::endl;
-    }
-  }
-
-  SubstitutionCipher germanUmlauts;
-  germanUmlauts.addSubstitution( "ae", L'ä' );
-  germanUmlauts.addSubstitution( "oe", L'ö' );
-  germanUmlauts.addSubstitution( "ue", L'ü' );
-  germanUmlauts.addSubstitution( "a", L'ä' ); // lazy typist versions
-  germanUmlauts.addSubstitution( "o", L'ö' );
-  germanUmlauts.addSubstitution( "u", L'ü' );
-  germanUmlauts.addSubstitution( "ss", L'ß' );
-
-  Q_FOREACH( QString outcome, germanUmlauts.decipher( QString::fromWCharArray( L"Ich habe zwei Füße" ) ) ) {
-    std::cout << "  " << outcome.toStdString() << std::endl;
-  }
-
-  return 0;
-}
-*/
 
 QStringList testVectors()
 {

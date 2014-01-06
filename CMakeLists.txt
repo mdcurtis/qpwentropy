@@ -19,14 +19,18 @@ set(QT_REQUIRED_MODULES QtCore QtGui QtTest  )
 find_package(Qt4 4.6.0 REQUIRED ${QT_REQUIRED_MODULES})
 include(${QT_USE_FILE})
 
+include_directories( src )
+
 set( qpwentropy_SOURCES 
-  SubstitutionCipher.cpp
-  RankedDictionary.cpp
-  DictionaryMatcher.cpp
-  SubstitutionMatcher.cpp
-  Range.cpp
-  Match.cpp
-  main.cpp
+  src/SubstitutionCipher.cpp
+  src/RankedDictionary.cpp
+  src/DictionaryMatcher.cpp
+  src/SubstitutionMatcher.cpp
+  src/SequenceMatcher.cpp
+  src/SpatialMatcher.cpp
+  src/Range.cpp
+  src/Match.cpp
+  test.cpp
 )
 
 add_executable( qpwentropy ${qpwentropy_SOURCES} )
